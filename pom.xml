@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.github.gv2011</groupId>
+    <artifactId>parent-gv</artifactId>
+    <version>1.0</version>
+  </parent>
+  
+  <artifactId>blobstore</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Vinz Blobstore</name>
+  <url>https://github.com/gv2011/blobstore</url>
+  
+  <properties>
+    <java.release>15</java.release>
+    <util.version>0.6</util.version>
+    <logback.version>1.3.1</logback.version>
+  </properties>
+  
+  <licenses>
+    <license>
+      <name>The MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <comments>
+        The license applies to this Maven artifact, its modules and other content within the GIT repository
+        specified in the scm section of this file.
+        The copyright years are given by the inceptionYear tag within this file and by the history of the 
+        GIT repository.
+      </comments>
+    </license>
+  </licenses>
+  
+  <inceptionYear>2020</inceptionYear>
+  
+  <developers>
+    <developer>
+      <id>gv2011</id>
+      <name>Vinz</name>
+      <url>https://github.com/gv2011</url>
+    </developer>
+  </developers>
+  
+  <scm>
+    <connection>scm:git:git@github.com:gv2011/blobstore.git</connection>
+    <developerConnection>scm:git:git@github.com:gv2011/blobstore.git</developerConnection>
+    <url>https://github.com/gv2011/blobstore</url>
+  </scm>
+
+  <modules>
+    <module>core</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.github.gv2011</groupId>
+        <artifactId>util-apis</artifactId>
+        <version>0.6</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.gv2011</groupId>
+        <artifactId>jsong</artifactId>
+        <version>${util.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.github.gv2011</groupId>
+        <artifactId>gcol</artifactId>
+        <version>${util.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.github.gv2011</groupId>
+        <artifactId>http</artifactId>
+        <version>${util.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.gv2011</groupId>
+        <artifactId>util-beans</artifactId>
+        <version>${util.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.github.gv2011.logback</groupId>
+        <artifactId>logback-adapter</artifactId>
+        <version>${logback.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.github.gv2011.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>${logback.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.github.gv2011</groupId>
+        <artifactId>testutil</artifactId>
+        <version>${util.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>
