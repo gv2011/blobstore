@@ -17,9 +17,9 @@
 
   <properties>
     <java.release>15</java.release>
-    <util-apis.version>0.8-SNAPSHOT</util-apis.version>
-    <logback.version>1.3.3-SNAPSHOT</logback.version>
-    <util.version>0.8-SNAPSHOT</util.version>
+    <util-apis.version>0.8</util-apis.version>
+    <logback.version>1.3.3</logback.version>
+    <util.version>0.8</util.version>
   </properties>
 
   <licenses>
