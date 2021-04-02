@@ -21,5 +21,4 @@ public interface Blobstore {
   
   boolean remove(Hash256 hash);
   
-
 }

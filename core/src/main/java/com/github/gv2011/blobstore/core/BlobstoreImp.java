@@ -18,11 +18,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
 import com.github.gv2011.blobstore.Blobstore;
 import com.github.gv2011.blobstore.StoreResult;
 import com.github.gv2011.blobstore.StoreResult.ResultCode;
 import com.github.gv2011.util.BeanUtils;
+import com.github.gv2011.util.StreamUtils;
 import com.github.gv2011.util.XStream;
 import com.github.gv2011.util.bytes.Hash256;
 import com.github.gv2011.util.bytes.HashAndSize;
@@ -30,7 +33,7 @@ import com.github.gv2011.util.bytes.HashFactory;
 import com.github.gv2011.util.icol.ISet;
 import com.github.gv2011.util.icol.Opt;
 
-public class BlobstoreImp implements Blobstore{
+final class BlobstoreImp implements Blobstore{
   
   private final HashFactory hashFactory = HashFactory.INSTANCE.get();
   
@@ -41,7 +44,7 @@ public class BlobstoreImp implements Blobstore{
   
   private final Map<Hash256,Integer> reading = new HashMap<>();
   
-  public BlobstoreImp(Path storeDir) {
+  BlobstoreImp(Path storeDir) {
     this.storeDir = storeDir;
     tmpDir = storeDir.resolve("tmp");
     call(()->Files.createDirectories(tmpDir));
@@ -54,7 +57,7 @@ public class BlobstoreImp implements Blobstore{
   
   private StoreResult storeInternal(InputStream data, Opt<Hash256> hash, Opt<Long> size) {
     final Path tmpFile = call(()->Files.createTempFile(tmpDir, "write-", ""));
-    HashAndSize hashAndSize = callWithCloseable(()->Files.newOutputStream(tmpFile), out->{
+    HashAndSize hashAndSize = callWithCloseable(()->new DeflaterOutputStream(Files.newOutputStream(tmpFile)), out->{
       return hashFactory.hash256(()->data, out);
     });
     final Set<ResultCode> resultCodes = EnumSet.noneOf(ResultCode.class);
@@ -82,9 +85,10 @@ public class BlobstoreImp implements Blobstore{
     synchronized(lock){
       Path location = getLocation(hashAndSize.hash());
       if(Files.exists(location)){
+        final long tmpFileSize = call(()->Files.size(tmpFile));
         call(()->Files.delete(tmpFile));
         return 
-          call(()->Files.size(location))==hashAndSize.size().longValue()
+          call(()->Files.size(location))==tmpFileSize
           ? setOf(ResultCode.OK, ResultCode.EXISTS)
           : setOf(ResultCode.WRONG_SIZE, ResultCode.EXISTS)
         ;
@@ -113,28 +117,20 @@ public class BlobstoreImp implements Blobstore{
   @Override
   public StoreResult store(InputStream data, Opt<Hash256> hash, Opt<Long> size) {
     boolean done = false;
-    final long localSize;
     if(hash.isPresent()){
       synchronized(lock){
         final Path location = getLocation(hash.get());
         if(Files.exists(location)){
-          localSize = call(()->Files.size(location));
           done = true;
         }
-        else localSize = -1;
       }
     }
-    else localSize = -1;
     if(done){
       call(data::close);
       return BeanUtils.beanBuilder(StoreResult.class)
         .set(StoreResult::hash).to(hash)
-        .set(StoreResult::size).to(Opt.of(localSize))
-        .set(StoreResult::resultCodes).to(
-            size.map(s->s.equals(localSize)).orElse(true)
-            ? setOf(ResultCode.OK, ResultCode.EXISTS)
-            : setOf(ResultCode.WRONG_SIZE, ResultCode.EXISTS)
-        )
+        .set(StoreResult::size).to(size)
+        .set(StoreResult::resultCodes).to(setOf(ResultCode.OK, ResultCode.EXISTS))
         .build()
       ;
     }
@@ -145,10 +141,7 @@ public class BlobstoreImp implements Blobstore{
   
   @Override
   public Opt<InputStream> tryGet(Hash256 hash) {
-    synchronized(lock){
-      int count = reading.getOrDefault(hash, 0);
-      reading.put(hash, count+1);
-    }
+    lock(hash);
     boolean unlockByClose = false;
     try{
       final Path location = getLocation(hash);
@@ -187,10 +180,20 @@ public class BlobstoreImp implements Blobstore{
     }
   }
 
+  private void lock(Hash256 hash) {
+    synchronized(lock){
+      int count = reading.getOrDefault(hash, 0);
+      verify(count>=0);
+      reading.put(hash, count+1);
+      lock.notifyAll();
+    }
+  }
+  
   private void unlock(Hash256 hash) {
     synchronized(lock){
-      int count = reading.getOrDefault(hash, 0)-1;
-      verify(count>=0);
+      int count = reading.getOrDefault(hash, 0);
+      verify(count>0);
+      count--;
       if(count==0) reading.remove(hash);
       else reading.put(hash, count);
       lock.notifyAll();
@@ -199,19 +202,14 @@ public class BlobstoreImp implements Blobstore{
   
   @Override
   public Opt<Long> tryGetSize(Hash256 hash) {
-    synchronized(lock){
-      final Path location = getLocation(hash);
-      return Files.exists(location)
-        ? Opt.of(call(()->Files.size(location)))
-        : Opt.empty()
-      ;
-    }
+    return tryGet(hash).map(fileStream->{
+      return callWithCloseable(()->new InflaterInputStream(fileStream), StreamUtils::count);
+    });
   }
   
   @Override
   public XStream<HashAndSize> list(Hash256 startInclusive) {
     return notYetImplemented();
   }
-  
 
 }

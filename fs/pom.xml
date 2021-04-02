@@ -9,7 +9,7 @@
     <version>0.1-SNAPSHOT</version>
   </parent>
 
-  <artifactId>blobstore-core</artifactId>
+  <artifactId>blobstore-fs</artifactId>
 
   <dependencies>
     <dependency>
